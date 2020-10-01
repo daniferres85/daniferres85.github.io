@@ -18,6 +18,7 @@ var camera = {
         far : 0
     }
 };
+var boundingSphere = {};
 
 window.addEventListener("load", ev => {
     // webgl setup
@@ -77,35 +78,38 @@ window.addEventListener("load", ev => {
     });
     
     document.body.appendChild(canvas);
-    // webgl2 enabled default from: firefox-51, chrome-56
+
     const gl = canvas.getContext("webgl2");
-    gl.enable(gl.DEPTH_TEST);
 
-    // drawing data (as viewport square)
-    const boundingSphere = getBoundingSphere(vertices);
-    const normals = getNormals(vertices, indices);
+    var normals = [];
+    const setupGeometry = () => {
+        boundingSphere = getBoundingSphere(vertices);
+        normals = getNormals(vertices, indices);
+        return indices.length * 3;
+    };
     
-    const vert3dData = new Float32Array([].concat(...vertices));
-    const vertBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, vert3dData, gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-    const indexData = new Uint16Array([].concat(...indices));
-    const indexBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuf);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexData, gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
-    const normalData = new Float32Array([].concat(...normals));
-    const normalBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, normalData, gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-    // opengl3 VAO
-    const vertexArray = gl.createVertexArray();
-    const setupVAO = (program) => {
+    const setupVao = (program) => {
+        const vert3dData = new Float32Array([].concat(...vertices));
+        const vertBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, vert3dData, gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        
+        const indexData = new Uint16Array([].concat(...indices));
+        const indexBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuf);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexData, gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+        
+        const normalData = new Float32Array([].concat(...normals));
+        const normalBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, normalData, gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        
+        // opengl3 VAO
+        const vertexArray = gl.createVertexArray();
+        
         // setup buffers and attributes to the VAO
         gl.bindVertexArray(vertexArray);
         // bind buffer data
@@ -129,36 +133,16 @@ window.addEventListener("load", ev => {
             normalId, count, elem, normalize, stride, offset);
 
         gl.bindVertexArray(null);
-    };
-    
-    
-    // shader loader
-    const loadShader = (src, type) => {
-        const shader = gl.createShader(type);
-        gl.shaderSource(shader, src);
-        gl.compileShader(shader);
-        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-            console.log(src, gl.getShaderInfoLog(shader));
-        }
-        return shader;
-    };
-    const loadProgram = () => Promise.all([
-        fetch("vertex.glsl").then(res => res.text()).then(
-            src => loadShader(src, gl.VERTEX_SHADER)),
-        fetch("fragment.glsl").then(res => res.text()).then(
-            src => loadShader(src, gl.FRAGMENT_SHADER))
-    ]).then(shaders => {
-        const program = gl.createProgram();
-        shaders.forEach(shader => gl.attachShader(program, shader));
-        gl.linkProgram(program);
-        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            console.log(gl.getProgramInfoLog(program));
+        var vaoAndProg = {
+            prog : program,
+            vao : vertexArray
         };
-        return program;
-    });
+        return vaoAndProg;
+    }
+      
+    
 
     // initialize data variables for the shader program
-    var mvp = [];
     const initializeCamera = () => {
         camera.projection.left = -boundingSphere.radius;
         camera.projection.right = boundingSphere.radius;
@@ -181,40 +165,34 @@ window.addEventListener("load", ev => {
         }
     });
     
-    const initVariables = (program) => {
-        setupVAO(program);
 
-        return program;
-    };
-
-    initializeCamera();
-    
-    const render = (program, count) => {
+    const render = (vaoAndProg, nIndices, count) => {
+        gl.enable(gl.DEPTH_TEST);
         gl.clearColor(0.5,0.5,0.5,1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        gl.useProgram(program);
+        gl.useProgram(vaoAndProg.prog);
         
-        var matrixLocation = gl.getUniformLocation(program, 'modelViewProjection');
+        var matrixLocation = gl.getUniformLocation(vaoAndProg.prog, 'modelViewProjection');
         gl.uniformMatrix4fv(matrixLocation, false, getViewProjection(camera));
 
-        var matrixLocation = gl.getUniformLocation(program, 'normalMatrix');
+        var matrixLocation = gl.getUniformLocation(vaoAndProg.prog, 'normalMatrix');
         gl.uniformMatrix4fv(matrixLocation, false, getNormalMatrix(camera));
 
         // draw the buffer with VAO
         // NOTE: binding vert and index buffer is not required
-        gl.bindVertexArray(vertexArray);
-        const indexOffset = 0;
-        gl.drawElements(gl.TRIANGLES, indexData.length,
-                        gl.UNSIGNED_SHORT, indexOffset);
+        gl.bindVertexArray(vaoAndProg.vao);
+
+        gl.drawElements(gl.TRIANGLES, nIndices,
+                        gl.UNSIGNED_SHORT, 0);
         const error = gl.getError();
         if (error !== gl.NO_ERROR) console.log(error);
         gl.bindVertexArray(null);
         gl.useProgram(null);
     };
-    const startRendering = (program) => {
+    const startRendering = (vaoAndProg, nIndices) => {
         (function loop(count) {
             requestAnimationFrame(() => {
-                render(program, count);
+                render(vaoAndProg, nIndices, count);
                 setTimeout(loop, 30, (count + 1) & 0x7fffffff);
             });
         })(0);
@@ -229,5 +207,8 @@ window.addEventListener("load", ev => {
         gl.deleteProgram(program);
     };
     
-    loadProgram().then(initVariables).then(startRendering);
+    var nIndices = setupGeometry();
+    initializeCamera();
+    loadProgram(gl, "./vertex.glsl", "./fragment.glsl").then(setupVao).then(vaoAndProg => startRendering(vaoAndProg, nIndices));
+    
 }, false);
