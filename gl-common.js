@@ -12,12 +12,12 @@ const loadPrograms = (gl, shaderInfos) =>
       {
           var promises = [];
           shaderInfos.forEach(s =>
-                              promises.push(loadProgram(gl, s.vertex, s.fragment)));
+                              promises.push(loadProgram(gl, s.vertex, s.fragment, s.tfv)));
           return Promise.all(promises);
       };
 
 
-const loadProgram = (gl, vertexFilename, fragmentFilename) => Promise.all([
+const loadProgram = (gl, vertexFilename, fragmentFilename, tfv) => Promise.all([
     fetch(vertexFilename).then(res => res.text()).then(
         src => loadShader(gl, src, gl.VERTEX_SHADER)),
     fetch(fragmentFilename).then(res => res.text()).then(
@@ -25,6 +25,14 @@ const loadProgram = (gl, vertexFilename, fragmentFilename) => Promise.all([
 ]).then(shaders => {
     const program = gl.createProgram();
     shaders.forEach(shader => gl.attachShader(program, shader));
+
+    if (tfv != null) {
+        gl.transformFeedbackVaryings(
+            program,
+            tfv,
+            gl.SEPARATE_ATTRIBS)
+    }
+    
     gl.linkProgram(program);
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
         console.log(gl.getProgramInfoLog(program));
