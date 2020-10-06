@@ -1,4 +1,4 @@
-export function getBoundingBox(vertices3d)
+function getBoundingBox(vertices3d)
 {
     var minX = Math.min(...vertices3d.map(x => x[0]));
     var maxX = Math.max(...vertices3d.map(x => x[0]));
@@ -22,11 +22,11 @@ export function getBoundingBox(vertices3d)
     return bbox;
 }
 
-export function calcModulus(vec3d)
+function calcModulus(vec3d)
 {
     return Math.sqrt(vec3d[0] * vec3d[0] + vec3d[1] * vec3d[1] + vec3d[2] * vec3d[2]);
 }
-export function getBoundingSphere(vertices3d)
+function getBoundingSphere(vertices3d)
 {
     const bbox = getBoundingBox(vertices3d);
     var center = bbox.center;
@@ -39,7 +39,7 @@ export function getBoundingSphere(vertices3d)
     return bsphere;
 }
 
-export function getNormals(vertices, indices)
+function getNormals(vertices, indices)
 {
     var normals = Array(vertices.length).fill(Array(3).fill(0));
     for(var i = 0; i < indices.length; ++i)
