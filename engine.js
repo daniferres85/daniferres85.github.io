@@ -19,7 +19,6 @@ window.addEventListener("load", ev => {
             var dEye = boundingSphere.radius/(Math.tan(fovRad/2));
             var eye = [];
             vec3.add(eye, boundingSphere.center, [0,0,dEye]);
-            console.log([fovRad, dEye, boundingSphere.center, eye]);
             return {
                 eye : eye,
                 target : boundingSphere.center,
@@ -58,12 +57,13 @@ window.addEventListener("load", ev => {
     canvas.addEventListener('wheel', (e) => {
         if (e.deltaY > 0)
         {
-            camera.projection.fovRad /= 1.1;
+            camera.projection.fovRad *= 1.1;
         }
         else
         {
-            camera.projection.fovRad *= 1.1;
+            camera.projection.fovRad /= 1.1;
         }
+        camera.projection.fovRad = Math.max(0.01, Math.min(Math.PI, camera.projection.fovRad));
     }); 
 
     canvas.addEventListener('mousedown', ev => {

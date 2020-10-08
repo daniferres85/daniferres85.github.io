@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Prova WebGl2</title>
   <meta charset="utf-8">
   <script src="gl-matrix-min.js"></script>
   <script src="gl-common.js"></script>
@@ -10,17 +9,23 @@
   <script src="bunny2.js"></script>
   <script src="painter.js"></script>
   <script src="engine.js"></script>
+  <title>WebGL2 tests</title>
 </head>
 <body>
+  <h1>Painter: Transform feedback using WebGL2</h1>
+  <h3>Camera Controls: </h3>
   <p>
-    WebGL2 painter using transform feedback
-    <canvas id="myCanvas" width="512" height="512">
+    Click to orbit around the model<br>
+    Wheel to zoom<br>
+    Press 'f' to reset the view<br>
   </p>
+  
+  <h3>Painter Controls: </h3>
   <p>
-    Press 'f' to reset the view
+    Press 'a' while clicking to paint the model
   </p>
-  <p>
-    Brush
+
+  <h3>Brush Settings</h3>
   <div>
     <input type="color" id="brushColor" name="head"
            value="#ffffff">
@@ -32,6 +37,13 @@
     <label for="thickness">Thickness</label>
     <label value="brushThickness.value">
   </div>
+  <p>
+    <canvas style="margin-top=3cm;" id="myCanvas" width="512" height="512">
+  </p>
+  <p>
+    Credit to: <br>
+    <a href="http://graphics.stanford.edu/data/3Dscanrep/" target="_blank">http://graphics.stanford.edu/data/3Dscanrep</a> for the bunny <br>
+    <a href="http://glmatrix.net/" target="_blank">http://glmatrix.net/</a> for the math functions <br>
   </p>
 </div>
 </body>
