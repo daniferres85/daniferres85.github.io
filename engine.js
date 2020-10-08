@@ -1,13 +1,10 @@
 window.addEventListener("load", ev => {
-
     const canvas = document.getElementById("myCanvas");
     canvas.width = 512, canvas.height = 512;
     const gl = canvas.getContext("webgl2");
     
-    
-    //?appendchild?
-
     var mouseIsDown = false;
+    var actionPressed = false;
     var intersectionPoint = [];
     var intersectionPointFun;
     var boundingSphereFun;
@@ -16,21 +13,21 @@ window.addEventListener("load", ev => {
     function initializeCamera() {
         if (boundingSphereFun != null)
         {
+            var fovDeg = 15;
+            var fovRad = Math.PI * fovDeg / 180;
             boundingSphere = boundingSphereFun();
-
+            var dEye = boundingSphere.radius/(Math.tan(fovRad/2));
+            var eye = [];
+            vec3.add(eye, boundingSphere.center, [0,0,dEye]);
+            console.log([fovRad, dEye, boundingSphere.center, eye]);
             return {
-                eye : [boundingSphere.center[0],
-                       boundingSphere.center[1],
-                       boundingSphere.center[2] + boundingSphere.radius],
+                eye : eye,
                 target : boundingSphere.center,
                 up: [0,1,0],
                 projection : {
-                    left: -boundingSphere.radius,
-                    right: boundingSphere.radius,
-                    bottom: -boundingSphere.radius,
-                    top: boundingSphere.radius,
+                    fovRad: fovRad,
                     near: 0.01,
-                    far: 1000
+                    far: 10000
                 }
             };
         }
@@ -42,22 +39,30 @@ window.addEventListener("load", ev => {
             camera = initializeCamera();
         }
     });
+    
+    document.addEventListener('keydown', ev => {
+        if (ev.code == 'KeyA')
+        {
+            actionPressed = true;
+        }
+    });
+
+    document.addEventListener('keyup', ev => {
+        if (ev.code == 'KeyA')
+        {
+            actionPressed = false;
+        }
+    });
 
     
     canvas.addEventListener('wheel', (e) => {
         if (e.deltaY > 0)
         {
-            camera.projection.left *= 1.5;
-            camera.projection.right *= 1.5;
-            camera.projection.bottom *= 1.5;
-            camera.projection.top *= 1.5;
+            camera.projection.fovRad /= 1.1;
         }
         else
         {
-            camera.projection.left /= 1.5;
-            camera.projection.right /= 1.5;
-            camera.projection.bottom /= 1.5;
-            camera.projection.top /= 1.5;
+            camera.projection.fovRad *= 1.1;
         }
     }); 
 
@@ -69,7 +74,8 @@ window.addEventListener("load", ev => {
         mouseIsDown = false;
     });
     canvas.addEventListener('mousemove', ev => {
-        if (mouseIsDown)
+        
+        if (mouseIsDown && !actionPressed)
         {
             var bb = getBillboardVectors(camera);
             // increment in X means a negative rotation along the up vector
@@ -98,7 +104,7 @@ window.addEventListener("load", ev => {
             if (intersectionPointFun)
             {
                 //intersectionPoint = get3dIntersection(vertices, indices, [ev.offsetX, ev.offsetY], camera, [512,512]);
-                intersectionPoint = intersectionPointFun([ev.offsetX, ev.offsetY], camera, [512,512]);
+                intersectionPoint = intersectionPointFun([ev.offsetX, ev.offsetY], camera, [canvas.width   , canvas.height]);
             }
         }
     });
@@ -115,7 +121,8 @@ window.addEventListener("load", ev => {
                                       {
                                           camera: camera,
                                           intersectionPoint : intersectionPoint,
-                                          pingPong : pingPong
+                                          pingPong : pingPong,
+                                          action: actionPressed & mouseIsDown
                                       }));
         pingPong = (pingPong + 1)%2;
     }

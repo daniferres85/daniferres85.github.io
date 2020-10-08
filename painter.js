@@ -1,5 +1,18 @@
+const hexToRgb = hex =>
+      hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i
+                  ,(m, r, g, b) => '#' + r + r + g + g + b + b)
+      .substring(1).match(/.{2}/g)
+      .map(x => parseInt(x, 16));
+
 function createGeometry()
 {
+    var boundingSphere = getBoundingSphere(vertices);
+    const thicknessSlider = document.getElementById("brushThickness");
+
+    thicknessSlider.min = boundingSphere.radius/80;
+    thicknessSlider.max = boundingSphere.radius/8;
+    thicknessSlider.step = boundingSphere.radius/400;
+    thicknessSlider.value = (thicknessSlider.max + thicknessSlider.min)/2;
     return {
         vertices : vertices,
         indices : indices,
@@ -136,10 +149,10 @@ function createBatches(gl, programs, buffers)
                 }
                 gl.disable(gl.DEPTH_TEST);
                 gl.useProgram(program);
-                var matrixLocation = gl.getUniformLocation(program, 'modelViewProjection');
+                var matrixLocation = gl.getUniformLocation(program, "modelViewProjection");
                 gl.uniformMatrix4fv(matrixLocation, false, getViewProjection(context.camera));
                 
-                var intLocation = gl.getUniformLocation(program, 'mouseIntersection');
+                var intLocation = gl.getUniformLocation(program, "mouseIntersection");
 
                 var intPoint = [];
                 if (context.intersectionPoint == null)
@@ -149,7 +162,26 @@ function createBatches(gl, programs, buffers)
                                 context.intersectionPoint[1],
                                 context.intersectionPoint[2],
                                 1];
+
                 gl.uniform4fv(intLocation, intPoint);
+
+                const brushColorControl = document.getElementById("brushColor");
+                var hex = brushColorControl.value;
+                var rgb = hexToRgb(hex);
+                var brushColorLocation = gl.getUniformLocation(program, "brushColor");
+                gl.uniform3fv(brushColorLocation, [rgb[0]/255, rgb[1]/255, rgb[2]/255]);
+
+                const thicknessSlider = document.getElementById("brushThickness");
+                var brushThicknessLocation = gl.getUniformLocation(program, "thickness");
+
+                if (context.action)
+                {
+                    gl.uniform1f(brushThicknessLocation, thicknessSlider.value);
+                }
+                else
+                {
+                    gl.uniform1f(brushThicknessLocation, 0);
+                }
 
                 gl.bindVertexArray(tfvaos[ii]);
 

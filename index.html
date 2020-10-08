@@ -7,7 +7,7 @@
   <script src="gl-common.js"></script>
   <script src="camera.js"></script>
   <script src="utils.js"></script>
-  <script src="bunny.js"></script>
+  <script src="bunny2.js"></script>
   <script src="painter.js"></script>
   <script src="engine.js"></script>
 </head>
@@ -18,5 +18,20 @@
   <p>
     Press 'f' to reset the view
   </p>
+  <p>
+    Brush
+  <div>
+    <input type="color" id="brushColor" name="head"
+           value="#ffffff">
+    <label for="brushColor">Color</label>
+  </div>
+  <div>
+    <input type="range" id="brushThickness" name="volume"
+         min="0" max="11">
+    <label for="thickness">Thickness</label>
+    <label value="brushThickness.value">
+  </div>
+  </p>
+</div>
 </body>
 </html>

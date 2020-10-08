@@ -3,10 +3,7 @@
  - target
  - up
  - projection
-      - left,
-      - right
-      - bottom 
-      - top
+      - fovRad
       - near
       - far*/
 
@@ -37,14 +34,23 @@ function getBillboardVectors(cam)
 function getProjectionMatrix(cam)
 {
     var res = [];
-    mat4.ortho(res,
-               cam.projection.left,
-               cam.projection.right,
-               cam.projection.bottom,
-               cam.projection.top,
-               cam.projection.near,
-               cam.projection.far);
+    mat4.perspective(res,
+                     cam.projection.fovRad,
+                     1, // aspect
+                     cam.projection.near,
+                     cam.projection.far);
     return res;
+}
+
+function getFrustum(cam)
+{
+    var aspect = 1;
+    var top = cam.projection.near * Math.tan(cam.projection.fovRad * 0.5);
+    return {
+        top:  top,
+        bottom: -top,
+        right : top * aspect,
+        left : -top * aspect};
 }
 
 function getViewProjection(cam)
@@ -73,17 +79,19 @@ function calcRay(u, v, camera, viewport)
     var t = (v - 0.5);
 
     var bb = getBillboardVectors(camera);
-    
-    var eyeX = camera.eye[0] + bb.right[0] * s * (camera.projection.right - camera.projection.left) +
-        bb.up[0] * t * (camera.projection.top - camera.projection.bottom);
-    var eyeY = camera.eye[1] + bb.right[1] * s * (camera.projection.right - camera.projection.left) +
-        bb.up[1] * t * (camera.projection.top - camera.projection.bottom);
-    var eyeZ = camera.eye[2] + bb.right[2] * s * (camera.projection.right - camera.projection.left) +
-        bb.up[2] * t * (camera.projection.top - camera.projection.bottom);
-    
+    var frustum = getFrustum(camera);
+
+    var vd = aspect/Math.abs(frustum.right - frustum.left) * camera.projection.near;
+
+    var dir = [
+        bb.right[0] * s + bb.up[0] * t - bb.viewDir[0] * vd,
+        bb.right[1] * s + bb.up[1] * t - bb.viewDir[1] * vd,
+        bb.right[2] * s + bb.up[2] * t - bb.viewDir[2] * vd];
+    var normDir = [];
+    vec3.normalize(normDir, dir);
     var ray = {
-        origin: [eyeX, eyeY, eyeZ],
-        dir: [-bb.viewDir[0], -bb.viewDir[1], -bb.viewDir[2]]
+        origin: camera.eye,
+        dir: normDir
     };
     return ray;
 }
@@ -95,14 +103,17 @@ function rayTriangleIntersect(ray, v0, v1, v2)
     var pvec = [];
     var qvec = [];
     var tvec = [];
-    var epsilon = 0.000001;
+    var epsilon = 1e-9;
     vec3.sub(edge1, v1, v0);
     vec3.sub(edge2, v2, v0);
     vec3.cross(pvec, ray.dir, edge2);
+    
     var det = vec3.dot(edge1, pvec);
-
-    if (det > -epsilon && det < epsilon)
+    
+    if ((det > -epsilon) && (det < epsilon))
+    {
         return null;
+    }
     var invDet = 1/det;
     
     vec3.sub(tvec, ray.origin, v0);
