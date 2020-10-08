@@ -2,17 +2,23 @@ window.addEventListener("load", ev => {
     const canvas = document.getElementById("myCanvas");
     canvas.width = 512, canvas.height = 512;
     const gl = canvas.getContext("webgl2");
-    
+
+    // Global state for the camera interaction
     var mouseIsDown = false;
+    var shiftPressed = false;
     var actionPressed = false;
     var intersectionPoint = [];
     var intersectionPointFun;
     var boundingSphereFun;
     var camera;
-    
+
+
+    // Reset the camera to view the whole model
     function initializeCamera() {
         if (boundingSphereFun != null)
         {
+
+            // The eye needs to be so far away that with a given Fov we can see the bounding sphere
             var fovDeg = 15;
             var fovRad = Math.PI * fovDeg / 180;
             boundingSphere = boundingSphereFun();
@@ -44,12 +50,20 @@ window.addEventListener("load", ev => {
         {
             actionPressed = true;
         }
+        else if (ev.code == 'ShiftLeft')
+        {
+            shiftPressed = true;
+        }
     });
 
     document.addEventListener('keyup', ev => {
         if (ev.code == 'KeyA')
         {
             actionPressed = false;
+        }
+        else if (ev.code == 'ShiftLeft')
+        {
+            shiftPressed = false;
         }
     });
 
@@ -73,14 +87,16 @@ window.addEventListener("load", ev => {
     window.addEventListener('mouseup', ev => {
         mouseIsDown = false;
     });
+    
     canvas.addEventListener('mousemove', ev => {
         
-        if (mouseIsDown && !actionPressed)
+        if (mouseIsDown && !actionPressed && !shiftPressed)
         {
-            var bb = getBillboardVectors(camera);
+            // Rotation, the pivot point is the camera.target
             // increment in X means a negative rotation along the up vector
-            var angleUp = -2 * Math.PI * ev.movementX / canvas.width;
             // increment in y means a negative rotation along the right
+            var bb = getBillboardVectors(camera);
+            var angleUp = -2 * Math.PI * ev.movementX / canvas.width;
             var angleRight = -2 * Math.PI * ev.movementY / canvas.height;
 
             var quatRight = [];
@@ -99,13 +115,34 @@ window.addEventListener("load", ev => {
 
             vec3.add(camera.eye, camera.target, newTargetToEye1);
         }
-        else
+        else if (shiftPressed && mouseIsDown)
         {
-            if (intersectionPointFun)
-            {
-                //intersectionPoint = get3dIntersection(vertices, indices, [ev.offsetX, ev.offsetY], camera, [512,512]);
-                intersectionPoint = intersectionPointFun([ev.offsetX, ev.offsetY], camera, [canvas.width   , canvas.height]);
-            }
+            // Pan, move the eye and the target proportionally to the frustum extents
+            // in the model center
+            
+            var targetToEye = getTargetToEye(camera);
+            var targetToEyeLength = vec3.length(targetToEye);
+            
+            var bb = getBillboardVectors(camera);
+            var frustum = getFrustumAtDepth(camera, targetToEyeLength);
+            
+            var hSpan = frustum.right - frustum.left;
+            var vSpan = frustum.top - frustum.bottom;
+            
+            var deltaH = hSpan * event.movementX/canvas.width;
+            var deltaV = vSpan * event.movementY/canvas.height;
+            camera.eye = [
+                camera.eye[0] - bb.right[0] * deltaH + bb.up[0] * deltaV,
+                camera.eye[1] - bb.right[1] * deltaH + bb.up[1] * deltaV,
+                camera.eye[2] - bb.right[2] * deltaH + bb.up[2] * deltaV];
+            camera.target = [
+                camera.target[0] - bb.right[0] * deltaH + bb.up[0] * deltaV,
+                camera.target[1] - bb.right[1] * deltaH + bb.up[1] * deltaV,
+                camera.target[2] - bb.right[2] * deltaH + bb.up[2] * deltaV];
+        }
+        else if (intersectionPointFun)
+        {
+            intersectionPoint = intersectionPointFun([ev.offsetX, ev.offsetY], camera, [canvas.width   , canvas.height]);
         }
     });
 
@@ -122,7 +159,7 @@ window.addEventListener("load", ev => {
                                           camera: camera,
                                           intersectionPoint : intersectionPoint,
                                           pingPong : pingPong,
-                                          action: actionPressed & mouseIsDown
+                                          action: actionPressed & mouseIsDown & !shiftPressed
                                       }));
         pingPong = (pingPong + 1)%2;
     }
@@ -135,12 +172,19 @@ window.addEventListener("load", ev => {
             });
         })(0);
     };
-    
+
+    // Prepare the vertices/indices
     var geometry = createGeometry();
 
+    // Setup the functions required by the camera
     intersectionPointFun = geometry.intersectionPointFun;
     boundingSphereFun = geometry.boundingSphereFun;
 
+    // create buffers, then shaders, then batches ... then render
+    // a batch is 'something' needed for render, it can be an object with shaders and Vaos and buffers
+    // setup for rendering
+    // a batch knows how to update itself and render itself
+    
     var buffers = createBuffers(gl, geometry);
 
     createShaders(gl).then(shaders => {

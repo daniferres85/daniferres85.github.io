@@ -53,6 +53,17 @@ function getFrustum(cam)
         left : -top * aspect};
 }
 
+function getFrustumAtDepth(cam, depth)
+{
+    var aspect = 1;
+    var top = depth * Math.tan(cam.projection.fovRad * 0.5);
+    return {
+        top:  top,
+        bottom: -top,
+        right : top * aspect,
+        left : -top * aspect};
+}
+
 function getViewProjection(cam)
 {
     var v = getViewMatrix(cam);
