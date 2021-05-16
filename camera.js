@@ -143,24 +143,70 @@ function rayTriangleIntersect(ray, v0, v1, v2)
     return result;
 }
 
-function get3dIntersection(vertices, indices, mousePos, camera, viewport)
+function getDistRayToPoint(ray, point)
+{
+    var res = [];
+    var diff = [];
+    vec3.sub(diff, point, ray.origin);
+    vec3.cross(res, ray.dir, diff);
+    return vec3.length(res);
+}
+
+function getNearestVertex(vertices, mousePos, camera, viewport)
 {
     var u = mousePos[0]/viewport[0];
     var v = 1 - mousePos[1]/viewport[1];
     var ray = calcRay(u, v, camera, viewport);
 
-    var resTmp = [];
-    indices.forEach(idx => {
-        var v0 = vertices[idx[0]];
-        var v1 = vertices[idx[1]];
-        var v2 = vertices[idx[2]];
-
-        var result = rayTriangleIntersect(ray, v0, v1, v2);
-        if (result != null)
+    var minDist = 1e9;
+    var vSel = [];
+    vertices.forEach(v => {
+        var d = getDistRayToPoint(ray, v);
+        if (d < minDist)
         {
-            resTmp.push(result);
+            minDist = d;
+            vSel = v;
         }
     });
+    return vSel;
+}
+
+function get3dIntersection(vertices, indices, mousePos, camera, viewport)
+{
+    var u = mousePos[0]/viewport[0];
+    var v = 1 - mousePos[1]/viewport[1];
+    var ray = calcRay(u, v, camera, viewport);
+    var resTmp = [];
+    
+    if (indices != null)
+    {
+        indices.forEach(idx => {
+            var v0 = vertices[idx[0]];
+            var v1 = vertices[idx[1]];
+            var v2 = vertices[idx[2]];
+            
+            var result = rayTriangleIntersect(ray, v0, v1, v2);
+            if (result != null)
+            {
+                resTmp.push(result);
+            }
+        });
+    }
+    else
+    {
+        for(var i = 0; i < vertices.length; i = i + 3)
+        {
+            var v0 = vertices[i + 0];
+            var v1 = vertices[i + 1];
+            var v2 = vertices[i + 2];
+            
+            var result = rayTriangleIntersect(ray, v0, v1, v2);
+            if (result != null)
+            {
+                resTmp.push(result);
+            }
+        }
+    }
 
     var nearestPoint = [];
     if (resTmp.length == 0)

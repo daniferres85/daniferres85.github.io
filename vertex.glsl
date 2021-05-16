@@ -12,7 +12,7 @@ uniform mat4 normalMatrix;
 
 void main(void) {
   vec4 t = normalMatrix * vec4(normal, 1);
-  outNormal = t.xyz;
+  outNormal = t.xyz/t.w;
   gl_Position = modelViewProjection * vec4(vert3d, 1);
   outColor = color;
 }

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="gl-matrix-min.js"></script>
+  <script src="gl-common.js"></script>
+  <script src="camera.js"></script>
+  <script src="utils.js"></script>
+  <script src="bunny2.js"></script>
+  <script src="painter.js"></script>
+  <script src="engine.js"></script>
+  <title>WebGL2 tests: Painter</title>
+</head>
+<body>
+  <h1>Painter: Transform feedback using WebGL2</h1>
+  <h3>Camera Controls: </h3>
+  <ul>
+    <li>Click to Orbit around the model</li>
+    <li>Click (+LeftShift) to Pan the scene</li>
+    <li>Wheel to Zoom</li>
+    <li>Press 'f' to Reset the view</li>
+  </ul>
+  
+  <h3>Painter Controls: </h3>
+  <ul>
+    <li>Press 'a' while clicking to Paint the model</li>
+  </ul>
+
+  <h3>Brush Settings</h3>
+  <div>
+    <input type="color" id="brushColor" name="head"
+           value="#ffffff">
+    <label for="brushColor">Color</label>
+  </div>
+  <div>
+    <input type="range" id="brushThickness" name="volume"
+         min="0" max="11">
+    <label for="thickness">Thickness</label>
+    <label value="brushThickness.value">
+  </div>
+  <p>
+    <canvas style="margin-top=3cm;" id="myCanvas" width="512" height="512">
+  </p>
+  <p>
+    Credit to: <br>
+    <a href="http://graphics.stanford.edu/data/3Dscanrep/" target="_blank">http://graphics.stanford.edu/data/3Dscanrep</a> for the bunny <br>
+    <a href="http://glmatrix.net/" target="_blank">http://glmatrix.net/</a> for the math functions <br>
+  </p>
+</div>
+</body>
+</html>

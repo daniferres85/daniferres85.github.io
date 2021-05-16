@@ -1,7 +1,7 @@
 window.addEventListener("load", ev => {
     const canvas = document.getElementById("myCanvas");
     canvas.width = 512, canvas.height = 512;
-    const gl = canvas.getContext("webgl2");
+    const gl = canvas.getContext("webgl2", {preserveDrawingBuffer: true});
 
     // Global state for the camera interaction
     var mouseIsDown = false;
@@ -32,7 +32,7 @@ window.addEventListener("load", ev => {
                 projection : {
                     fovRad: fovRad,
                     near: 0.01,
-                    far: 10000
+                    far: 10
                 }
             };
         }
@@ -142,7 +142,8 @@ window.addEventListener("load", ev => {
         }
         else if (intersectionPointFun)
         {
-            intersectionPoint = intersectionPointFun([ev.offsetX, ev.offsetY], camera, [canvas.width   , canvas.height]);
+            intersectionPoint = intersectionPointFun([ev.offsetX, ev.offsetY], camera, [canvas.width, canvas.height]);
+            console.log(intersectionPoint);
         }
     });
 

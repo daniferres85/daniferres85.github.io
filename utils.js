@@ -67,3 +67,76 @@ function getNormals(vertices, indices)
     }
     return normals;
 }
+
+function drawImage(gl, program, tex, texWidth, texHeight) {
+
+    // look up where the vertex data needs to go.
+    var positionLocation = gl.getAttribLocation(program, "a_position");
+    var texcoordLocation = gl.getAttribLocation(program, "a_texcoord");
+    
+    // lookup uniforms
+    var matrixLocation = gl.getUniformLocation(program, "u_matrix");
+    var textureLocation = gl.getUniformLocation(program, "u_texture");
+    
+    // Create a buffer.
+    var positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    
+    // Put a unit quad in the buffer
+    var positions = [
+        0, 0,
+        0, 1,
+        1, 0,
+        1, 0,
+        0, 1,
+        1, 1,
+    ];
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+    
+    // Create a buffer for texture coords
+    var texcoordBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
+    
+    // Put texcoords in the buffer
+    var texcoords = [
+        0, 0,
+        0, 1,
+        1, 0,
+        1, 0,
+        0, 1,
+        1, 1,
+    ];
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texcoords), gl.STATIC_DRAW);
+
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+
+    // Tell WebGL to use our shader program pair
+    gl.useProgram(program);
+
+    // Setup the attributes to pull data from our buffers
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.enableVertexAttribArray(positionLocation);
+    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
+    gl.enableVertexAttribArray(texcoordLocation);
+    gl.vertexAttribPointer(texcoordLocation, 2, gl.FLOAT, false, 0, 0);
+
+    // this matrix will convert from pixels to cli space
+    var matrix = [];
+    mat4.ortho(matrix, 0, 512,512, 0, -1, 1);
+
+    // this matrix will translate our quad to dstX, dstY
+
+    // this matrix will scale our 1 unit quad
+    // from 1 unit to texWidth, texHeight units
+    mat4.scale(matrix, matrix, texWidth, texHeight, 1);
+
+    // Set the matrix.
+    gl.uniformMatrix4fv(matrixLocation, false, matrix);
+
+    // Tell the shader to get the texture from texture unit 0
+    gl.uniform1i(textureLocation, 0);
+
+    // draw the quad (2 triangles, 6 vertices)
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+}
